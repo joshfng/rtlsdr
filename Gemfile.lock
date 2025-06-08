@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    rtlsdr (0.1.5)
+    rtlsdr (0.1.6)
       ffi (~> 1.15)
 
 GEM

@@ -2,6 +2,20 @@
 
 ## [Unreleased]
 
+## [0.1.6] - 2025-06-07
+
+### Added
+
+NA
+
+### Changed
+
+Rubocop
+
+### Fixed
+
+NA
+
 ## [0.1.5] - 2025-06-07
 
 No changes

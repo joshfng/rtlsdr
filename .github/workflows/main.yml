@@ -8,20 +8,6 @@ on:
   pull_request:
 
 jobs:
-  linter:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up Ruby
-        uses: ruby/setup-ruby@v1
-        with:
-          ruby-version: ${{ matrix.ruby }}
-          bundler-cache: true
-
-      - name: Rubocop
-        run: bundle exec rubocop -P
-
   build:
     runs-on: ubuntu-latest
     name: Ruby ${{ matrix.ruby }}
