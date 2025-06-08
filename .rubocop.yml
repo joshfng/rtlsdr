@@ -1,0 +1,34 @@
+plugins:
+  - rubocop-rake
+  - rubocop-rspec
+
+AllCops:
+  TargetRubyVersion: 3.3
+  NewCops: enable
+  Exclude:
+    - 'examples/**/*'
+
+Style/StringLiterals:
+  EnforcedStyle: double_quotes
+
+Style/StringLiteralsInInterpolation:
+  EnforcedStyle: double_quotes
+
+Metrics/ClassLength:
+  Max: 500
+Metrics/MethodLength:
+  Max: 20
+Metrics/BlockLength:
+  Max: 20
+Metrics/AbcSize:
+  Max: 25
+Metrics/PerceivedComplexity:
+  Max: 20
+Metrics/CyclomaticComplexity:
+  Max: 20
+
+Naming/MethodParameterName:
+  MinNameLength: 2
+
+RSpec/MultipleExpectations:
+  Enabled: false

@@ -1,0 +1,42 @@
+# frozen_string_literal: true
+
+# rubocop:disable Lint/UselessAssignment
+
+# YARD Configuration file
+# This file contains advanced configuration for YARD documentation generation
+
+# Custom tags for RTL-SDR specific documentation
+define_tag :frequency, :text, "Frequency Range"
+define_tag :sample_rate, :text, "Sample Rate"
+define_tag :gain, :text, "Gain Range"
+define_tag :tuner, :text, "Tuner Support"
+define_tag :thread_safety, :text, "Thread Safety"
+
+# Plugin settings
+plugins = []
+
+# Custom CSS and templates
+template_paths = ["templates"]
+
+# Markup settings
+markup = "markdown"
+markup_provider = "redcarpet"
+
+# Output settings
+output_dir = "doc"
+list_undoc = true
+protected = true
+private = false
+
+# Source exclusions
+exclude = [
+  "spec/**/*",
+  "examples/**/*",
+  "bin/**/*",
+  "exe/**/*",
+  "vendor/**/*",
+  "tmp/**/*",
+  ".git/**/*"
+]
+
+# rubocop:enable Lint/UselessAssignment

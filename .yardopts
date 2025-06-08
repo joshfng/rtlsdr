@@ -1,0 +1,17 @@
+--markup markdown
+--markup-provider redcarpet
+--title "RTL-SDR Ruby Gem Documentation"
+--readme README.md
+--files CHANGELOG.md,LICENSE.txt
+--output-dir doc
+--protected
+--no-private
+--embed-mixins
+--verbose
+--exclude spec/
+--exclude examples/
+--exclude bin/
+--exclude exe/
+--exclude vendor/
+--exclude tmp/
+--exclude .git/
