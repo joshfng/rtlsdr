@@ -7,6 +7,8 @@ require "rubocop/rake_task"
 require "rdoc/task"
 require "yard"
 
+# rubocop:disable Metrics/BlockLength
+
 RSpec::Core::RakeTask.new(:spec)
 
 RuboCop::RakeTask.new
@@ -171,7 +173,6 @@ task compile: :build_librtlsdr
 
 desc "Bump version, update CHANGELOG, commit, tag, and push"
 task :publish_release do
-  puts "This task will bump the version, update CHANGELOG.md, commit the changes, create a git tag, and push everything to the remote repository."
   puts "Make sure you have committed all your changes before running this task."
   puts "Do you want to continue? (yes/no)"
 
@@ -290,3 +291,5 @@ def bump_version(type) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
   File.write("CHANGELOG.md", updated_changelog)
   puts "Updated CHANGELOG.md with new version entry"
 end
+
+# rubocop:enable Metrics/BlockLength
