@@ -2,6 +2,8 @@
 
 A comprehensive Ruby gem for interfacing with RTL-SDR (Software Defined Radio) devices. This gem provides both low-level FFI bindings that closely match the C API and high-level Ruby-idiomatic classes for easy use.
 
+[gem](https://rubygems.org/gems/rtlsdr) | [docs](https://rubydoc.info/gems/rtlsdr)
+
 ## Features
 
 - **Complete C API Coverage**: All librtlsdr functions are exposed through FFI
