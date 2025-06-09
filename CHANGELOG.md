@@ -2,6 +2,21 @@
 
 ## [Unreleased]
 
+## [0.1.7] - 2025-06-09
+
+### Added
+
+NA
+
+### Changed
+
+update README
+
+### Fixed
+
+NA
+
+
 ## [0.1.6] - 2025-06-07
 
 ### Added
