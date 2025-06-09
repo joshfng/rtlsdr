@@ -10,7 +10,7 @@ Gem::Specification.new do |spec|
 
   spec.summary       = "Ruby bindings for librtlsdr"
   spec.description   = "Ruby bindings for librtlsdr - turn RTL2832 based DVB dongles into SDR receivers"
-  spec.homepage      = "https://github.com/joshfng/rtlsdr-ruby"
+  spec.homepage      = "https://github.com/joshfng/rtlsdr"
   spec.license       = "MIT"
   spec.required_ruby_version = ">= 3.3.0"
 
@@ -18,10 +18,10 @@ Gem::Specification.new do |spec|
   spec.metadata["rubygems_mfa_required"] = "true"
 
   spec.metadata["homepage_uri"] = spec.homepage
-  spec.metadata["source_code_uri"] = "https://github.com/joshfng/rtlsdr-ruby"
-  spec.metadata["changelog_uri"] = "https://github.com/joshfng/rtlsdr-ruby/blob/main/CHANGELOG.md"
+  spec.metadata["source_code_uri"] = "https://github.com/joshfng/rtlsdr"
+  spec.metadata["changelog_uri"] = "https://github.com/joshfng/rtlsdr/blob/main/CHANGELOG.md"
   spec.metadata["documentation_uri"] = "https://rubydoc.info/gems/rtlsdr"
-  spec.metadata["bug_tracker_uri"] = "https://github.com/joshfng/rtlsdr-ruby/issues"
+  spec.metadata["bug_tracker_uri"] = "https://github.com/joshfng/rtlsdr/issues"
 
   # Specify which files should be added to the gem when it is released.
   # The `git ls-files -z` loads the files in the RubyGem that have been added into git.

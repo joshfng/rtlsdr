@@ -380,7 +380,7 @@ ruby examples/spectrum_analyzer.rb
 
 ## License
 
-This gem is licensed under the GPL-2.0 license, the same as librtlsdr.
+This gem is licensed under the MIT license.
 
 ## Requirements
 
