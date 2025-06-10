@@ -7,7 +7,6 @@ gemspec
 
 gem "irb"
 gem "rake"
-gem "rake-compiler"
 
 gem "rspec"
 gem "rubocop"

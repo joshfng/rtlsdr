@@ -25,8 +25,54 @@ jobs:
           ruby-version: ${{ matrix.ruby }}
           bundler-cache: true
 
-      - name: Ensure librtlsdr
-        run: sudo apt-get install -y --no-install-recommends librtlsdr-dev
+      - name: Install system librtlsdr
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends librtlsdr-dev
 
       - name: Rspec
         run: bundle exec rspec
+
+  gem-build-test:
+    runs-on: ubuntu-latest
+    name: Gem Build and Installation Test
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.4.4'
+          bundler-cache: false
+
+      - name: Install system librtlsdr
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends librtlsdr-dev
+
+      - name: Check librtlsdr availability
+        run: |
+          rake check_librtlsdr
+
+      - name: Build and install gem locally
+        run: |
+          gem build rtlsdr.gemspec
+          gem install ./rtlsdr-*.gem --local
+
+      - name: Test gem functionality
+        run: |
+          ruby -e "
+            require 'rtlsdr'
+            puts 'Successfully loaded rtlsdr gem'
+            puts 'RTLSDR::VERSION: ' + RTLSDR::VERSION
+            puts 'Device count: ' + RTLSDR.device_count.to_s
+            puts 'FFI library loading successful!'
+
+            # Test that we can access device enumeration
+            devices = RTLSDR.devices
+            puts 'Available devices: ' + devices.length.to_s
+
+            # Test FFI constants
+            puts 'Tuner types available: E4000=' + RTLSDR::FFI::RTLSDR_TUNER_E4000.to_s
+            puts 'All tests passed!'
+          "

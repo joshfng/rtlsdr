@@ -2,7 +2,6 @@
 
 require "bundler/gem_tasks"
 require "rspec/core/rake_task"
-require "rake/extensiontask"
 require "rubocop/rake_task"
 require "rdoc/task"
 require "yard"
@@ -12,10 +11,6 @@ require "yard"
 RSpec::Core::RakeTask.new(:spec)
 
 RuboCop::RakeTask.new
-
-Rake::ExtensionTask.new("rtlsdr") do |ext|
-  ext.lib_dir = "lib/rtlsdr"
-end
 
 # RDoc documentation generation
 RDoc::Task.new(:rdoc) do |rdoc|
@@ -154,22 +149,32 @@ end
 
 task default: %i[spec rubocop doc_check]
 
-# Custom task to build librtlsdr if needed
-desc "Build librtlsdr from source (clones, configures, and compiles)"
-task :build_librtlsdr do
-  system("git clone https://github.com/steve-m/librtlsdr.git librtlsdr")
-  Dir.chdir("librtlsdr") do
-    system("mkdir -p build")
-    Dir.chdir("build") do
-      system("cmake .. -DCMAKE_INSTALL_PREFIX=#{Dir.pwd}/install")
-      system("make")
-      system("make install")
-    end
+# Task to help users install librtlsdr
+desc "Check for librtlsdr or provide installation instructions"
+task :check_librtlsdr do
+  puts "Checking for librtlsdr installation..."
+
+  # Try to load the library to check if it's available
+  begin
+    require_relative "lib/rtlsdr/ffi"
+    puts "✓ librtlsdr found and loadable"
+  rescue LoadError => e
+    puts "✗ librtlsdr not found"
+    puts
+    puts "To install librtlsdr:"
+    puts "  Ubuntu/Debian: sudo apt-get install librtlsdr-dev"
+    puts "  macOS:         brew install librtlsdr"
+    puts "  Windows:       See https://github.com/steve-m/librtlsdr for build instructions"
+    puts
+    puts "Or build from source:"
+    puts "  git clone https://github.com/steve-m/librtlsdr.git"
+    puts "  cd librtlsdr && mkdir build && cd build"
+    puts "  cmake .. && make && sudo make install"
+    puts
+    puts "Error details: #{e.message}"
+    exit 1
   end
 end
-
-desc "Compile native extensions (depends on librtlsdr)"
-task compile: :build_librtlsdr
 
 desc "Bump version, update CHANGELOG, commit, tag, and push"
 task :publish_release do
