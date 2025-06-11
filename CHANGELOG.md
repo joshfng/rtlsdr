@@ -2,6 +2,16 @@
 
 ## [Unreleased]
 
+## [0.1.8] - 2025-06-10
+
+### Added
+
+### Changed
+
+### Fixed
+
+Misc fixes
+
 ## [0.1.7] - 2025-06-09
 
 ### Added

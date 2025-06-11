@@ -12,5 +12,5 @@ module RTLSDR
   #
   # @return [String] Current gem version
   # @since 0.1.0
-  VERSION = "0.1.7"
+  VERSION = "0.1.8"
 end
