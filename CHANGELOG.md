@@ -2,6 +2,17 @@
 
 ## [Unreleased]
 
+## [0.1.9] - 2025-06-13
+
+### Added
+
+`dump_eeprom` method
+
+### Changed
+
+### Fixed
+
+
 ## [0.1.8] - 2025-06-10
 
 ### Added
