@@ -428,6 +428,19 @@ module RTLSDR
       data.length
     end
 
+    # Read the entire EEPROM contents
+    #
+    # Reads the complete 256-byte EEPROM data from the device and returns it
+    # as a binary string suitable for writing to a file.
+    #
+    # @return [String] Binary string containing the entire EEPROM contents
+    # @example Dump EEPROM to file
+    #   File.binwrite("eeprom_backup.bin", device.dump_eeprom)
+    def dump_eeprom
+      data = read_eeprom(0, 256) # RTL-SDR devices have a 256-byte EEPROM
+      data.pack("C*") # Convert byte array to binary string
+    end
+
     # Streaming control
     def reset_buffer
       result = FFI.rtlsdr_reset_buffer(@handle)
