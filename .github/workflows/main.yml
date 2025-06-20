@@ -27,8 +27,8 @@ jobs:
 
       - name: Install system librtlsdr
         run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends librtlsdr-dev
+          sudo apt-get update -qq
+          sudo apt-get install -qq -y --no-install-recommends librtlsdr-dev
 
       - name: Rspec
         run: bundle exec rspec
@@ -43,21 +43,25 @@ jobs:
         uses: ruby/setup-ruby@v1
         with:
           ruby-version: '3.4.4'
-          bundler-cache: false
+          bundler-cache: true
 
       - name: Install system librtlsdr
         run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends librtlsdr-dev
+          sudo apt-get update -qq
+          sudo apt-get install -qq -y --no-install-recommends librtlsdr-dev
 
       - name: Check librtlsdr availability
         run: |
-          rake check_librtlsdr
+          bundle exec rake check_librtlsdr
 
       - name: Build and install gem locally
         run: |
-          gem build rtlsdr.gemspec
-          gem install ./rtlsdr-*.gem --local
+          bundle install
+          echo "Building gem..."
+          gem build rtlsdr.gemspec --output rtlsdr.gem
+          echo "Installing gem..."
+          gem install ./rtlsdr.gem
+          echo "Gem installed successfully"
 
       - name: Test gem functionality
         run: |
