@@ -6,42 +6,59 @@ require "rubocop/rake_task"
 require "rdoc/task"
 require "yard"
 
-# rubocop:disable Metrics/BlockLength
-
 RSpec::Core::RakeTask.new(:spec)
-
 RuboCop::RakeTask.new
 
-# RDoc documentation generation
+DOC_TITLE = "RTL-SDR Ruby Gem Documentation"
+DOC_FILES = ["lib/**/*.rb", "-", "README.md", "CHANGELOG.md", "LICENSE.txt"].freeze
+
+def update_file_version(file_path, current_version, new_version)
+  return unless File.exist?(file_path)
+
+  content = File.read(file_path)
+
+  case file_path
+  when /version\.rb$/
+    updated = content.gsub(/VERSION = "#{Regexp.escape(current_version)}"/, %(VERSION = "#{new_version}"))
+  when "Gemfile.lock"
+    updated = content.gsub(/rtlsdr \(#{Regexp.escape(current_version)}\)/, "rtlsdr (#{new_version})")
+  when "CHANGELOG.md"
+    date = Time.now.strftime("%Y-%m-%d")
+    new_entry = "\n## [#{new_version}] - #{date}\n\n### Added\n\n### Changed\n\n### Fixed\n\n"
+
+    updated = if content.include?("## [Unreleased]")
+                content.sub(/(## \[Unreleased\].*?\n)/, "\\1#{new_entry}")
+              elsif content.include?("# Changelog")
+                content.sub(/(# Changelog\s*\n)/, "\\1#{new_entry}")
+              else
+                "# Changelog#{new_entry}#{content}"
+              end
+  end
+
+  File.write(file_path, updated) if updated
+end
+
+def current_version
+  require_relative "lib/rtlsdr/version"
+  RTLSDR::VERSION
+end
+
 RDoc::Task.new(:rdoc) do |rdoc|
   rdoc.rdoc_dir = "doc"
-  rdoc.title = "RTL-SDR Ruby Gem Documentation"
+  rdoc.title = DOC_TITLE
   rdoc.main = "README.md"
-  rdoc.rdoc_files.include("README.md", "CHANGELOG.md", "LICENSE.txt", "lib/**/*.rb")
-
-  # RDoc options for better output
-  rdoc.options << "--line-numbers"
-  rdoc.options << "--all"
-  rdoc.options << "--charset=UTF-8"
-  rdoc.options << "--exclude=spec/"
-  rdoc.options << "--exclude=examples/"
-  rdoc.options << "--exclude=bin/"
-  rdoc.options << "--exclude=exe/"
+  rdoc.rdoc_files.include(*DOC_FILES.first(1), *DOC_FILES[2..-1])
+  rdoc.options << "--line-numbers" << "--all" << "--charset=UTF-8"
+  %w[spec examples bin exe].each { |dir| rdoc.options << "--exclude=#{dir}/" }
   rdoc.options << "--template=hanna" if system("gem list hanna -i > /dev/null 2>&1")
 end
 
-# Clean documentation
-desc "Remove generated documentation"
-task :clean_doc do
-  rm_rf "doc"
-end
-
 YARD::Rake::YardocTask.new(:yard) do |yard|
-  yard.files = ["lib/**/*.rb", "-", "README.md", "CHANGELOG.md", "LICENSE.txt"]
+  yard.files = DOC_FILES
   yard.options = [
     "--output-dir", "doc",
     "--readme", "README.md",
-    "--title", "RTL-SDR Ruby Gem Documentation",
+    "--title", DOC_TITLE,
     "--markup", "markdown",
     "--markup-provider", "redcarpet",
     "--protected",
@@ -50,251 +67,84 @@ YARD::Rake::YardocTask.new(:yard) do |yard|
   ]
 end
 
-# YARD server for live documentation browsing
-desc "Start YARD documentation server"
-task :yard_server do
-  system("yard server --reload")
-end
+desc "Generate documentation"
+task :docs do
+  puts "Generating documentation..."
 
-# YARD statistics
-desc "Show YARD documentation statistics"
-task :yard_stats do
-  system("yard stats")
-end
-
-# Generate YARD documentation with coverage report
-desc "Generate YARD docs with coverage report"
-task :yard_coverage do
-  puts "Generating YARD documentation with coverage report..."
+  system("rdoc --verbose lib/")
   system("yard doc")
+end
 
-  # Parse YARD output for coverage
-  if system("yard stats > /tmp/yard_stats.txt 2>&1")
-    stats = File.read("/tmp/yard_stats.txt")
-    if stats =~ /(\d+\.\d+)% documented/
-      coverage = Regexp.last_match(1).to_f
-      puts "\nYARD Documentation coverage: #{coverage}%"
+desc "Clean generated documentation"
+task :clean_docs do
+  rm_rf ["doc", ".yardoc"]
+end
 
-      if coverage < 90.0
-        puts "WARNING: YARD documentation coverage is below 90%"
-        exit 1 if ENV["REQUIRE_DOC_COVERAGE"]
-      else
-        puts "✓ YARD documentation coverage is good!"
-      end
+namespace :version do
+  desc "Show current version"
+  task :show do
+    puts "Current version: #{current_version}"
+  end
+
+  %i[patch minor major].each do |type|
+    desc "Bump #{type} version"
+    task type do
+      bump_version(type)
     end
   end
 end
 
-# Comprehensive documentation check
-desc "Check documentation coverage and quality"
-task :doc_check do
-  puts "Running RDoc to check documentation coverage..."
-  system("rdoc --verbose lib/ > /tmp/rdoc_output.txt 2>&1")
+desc "Bump patch version (shortcut)"
+task bump: "version:patch"
 
-  # Parse output for coverage info
-  if File.exist?("/tmp/rdoc_output.txt")
-    output = File.read("/tmp/rdoc_output.txt")
-    if output =~ /(\d+\.\d+)% documented/
-      coverage = Regexp.last_match(1).to_f
-      puts "Documentation coverage: #{coverage}%"
-
-      if coverage < 90.0
-        puts "WARNING: Documentation coverage is below 90%"
-        exit 1 if ENV["REQUIRE_DOC_COVERAGE"]
-      else
-        puts "✓ Documentation coverage is good!"
-      end
-    end
-
-    # Check for undocumented items
-    if output.include?("undocumented")
-      puts "\nUndocumented items found:"
-      output.scan(/(\S+) \(undocumented\)/).each { |match| puts "  - #{match[0]}" }
-    end
-  end
-end
-
-# Documentation tasks
-desc "Generate all documentation (RDoc and YARD)"
-task docs: %i[rdoc yard]
-
-desc "Check all documentation coverage"
-task doc_coverage: %i[doc_check yard_coverage]
-
-desc "Clean all generated documentation"
-task clean_docs: [:clean_doc] do
-  rm_rf "doc"
-  rm_rf ".yardoc"
-end
-
-desc "Serve documentation locally"
-task :serve_docs do
-  puts "Choose documentation format:"
-  puts "1. RDoc (file://#{Dir.pwd}/doc/index.html)"
-  puts "2. YARD server (http://localhost:8808)"
-  print "Enter choice (1-2): "
-
-  choice = $stdin.gets.chomp
-  case choice
-  when "1"
-    Rake::Task[:rdoc].invoke unless File.exist?("doc/index.html")
-    system("open doc/index.html") if RUBY_PLATFORM =~ /darwin/
-    puts "RDoc documentation: file://#{Dir.pwd}/doc/index.html"
-  when "2"
-    Rake::Task[:yard_server].invoke
-  else
-    puts "Invalid choice"
-  end
-end
-
-task default: %i[spec rubocop doc_check]
-
-# Task to help users install librtlsdr
-desc "Check for librtlsdr or provide installation instructions"
-task :check_librtlsdr do
-  puts "Checking for librtlsdr installation..."
-
-  # Try to load the library to check if it's available
-  begin
-    require_relative "lib/rtlsdr/ffi"
-    puts "✓ librtlsdr found and loadable"
-  rescue LoadError => e
-    puts "✗ librtlsdr not found"
-    puts
-    puts "To install librtlsdr:"
-    puts "  Ubuntu/Debian: sudo apt-get install librtlsdr-dev"
-    puts "  macOS:         brew install librtlsdr"
-    puts "  Windows:       See https://github.com/steve-m/librtlsdr for build instructions"
-    puts
-    puts "Or build from source:"
-    puts "  git clone https://github.com/steve-m/librtlsdr.git"
-    puts "  cd librtlsdr && mkdir build && cd build"
-    puts "  cmake .. && make && sudo make install"
-    puts
-    puts "Error details: #{e.message}"
-    exit 1
-  end
-end
-
-desc "Bump version, update CHANGELOG, commit, tag, and push"
-task :publish_release do
+desc "Release: bump version, update changelog, commit, tag, and push"
+task :release do
   puts "Make sure you have committed all your changes before running this task."
-  puts "Do you want to continue? (yes/no)"
+  print "Do you want to continue? (yes/no): "
 
-  answer = $stdin.gets.chomp.downcase
-  if answer == "yes"
+  if $stdin.gets.chomp.downcase == "yes"
+    old_version = current_version
     Rake::Task["version:patch"].invoke
 
-    # Read the updated version from file since RTLSDR::VERSION is cached
     version_content = File.read("lib/rtlsdr/version.rb")
     new_version = version_content.match(/VERSION = "([^"]+)"/)[1]
 
     puts "Hit enter when you've updated the CHANGELOG"
-    $stdin.gets.chomp.downcase
+    $stdin.gets
 
-    puts "Committing changes..."
-    system("git add -A")
-    system("git commit -m 'Bump version to #{new_version}'")
-    puts "Creating git tag..."
+    system("git add -A && git commit -m 'Bump version to #{new_version}'")
     system("git tag v#{new_version}")
-    puts "Pushing changes and tags to remote repository..."
     system("git push && git push --tags")
-    puts "Release process completed successfully!"
 
+    puts "Release process completed successfully!"
     Rake::Task["release"].invoke
   else
     puts "Release process aborted."
   end
 end
 
-# Version management tasks
-namespace :version do
-  desc "Bump patch version (x.y.z -> x.y.z+1)"
-  task :patch do
-    bump_version(:patch)
-  end
-
-  desc "Bump minor version (x.y.z -> x.y+1.0)"
-  task :minor do
-    bump_version(:minor)
-  end
-
-  desc "Bump major version (x.y.z -> x+1.0.0)"
-  task :major do
-    bump_version(:major)
-  end
-
-  desc "Show current version"
-  task :show do
-    require_relative "lib/rtlsdr/version"
-    puts "Current version: #{RTLSDR::VERSION}"
-  end
-end
-
-desc "Bump patch version (shortcut for version:patch)"
-task :bump do
-  Rake::Task["version:patch"].invoke
-end
-
-def bump_version(type) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
+def bump_version(type)
   version_file = "lib/rtlsdr/version.rb"
   content = File.read(version_file)
+  current_ver = content.match(/VERSION = "([^"]+)"/)[1]
 
-  # Extract current version
-  current_version = content.match(/VERSION = "([^"]+)"/)[1]
-  major, minor, patch = current_version.split(".").map(&:to_i)
+  major, minor, patch = current_ver.split(".").map(&:to_i)
 
-  # Calculate new version based on type
   case type
-  when :patch
-    patch += 1
-  when :minor
-    minor += 1
-    patch = 0
-  when :major
-    major += 1
-    minor = 0
-    patch = 0
+  when :patch then patch += 1
+  when :minor then minor += 1; patch = 0
+  when :major then major += 1; minor = 0; patch = 0
   end
 
   new_version = "#{major}.#{minor}.#{patch}"
 
-  # Update version file
-  new_content = content.gsub(/VERSION = "#{Regexp.escape(current_version)}"/, %(VERSION = "#{new_version}"))
-  File.write(version_file, new_content)
-
-  # Update Gemfile.lock if it exists
-  if File.exist?("Gemfile.lock")
-    gemfile_lock = File.read("Gemfile.lock")
-    updated_gemfile_lock = gemfile_lock.gsub(/rtlsdr \(#{Regexp.escape(current_version)}\)/, "rtlsdr (#{new_version})")
-    File.write("Gemfile.lock", updated_gemfile_lock)
-    puts "Updated Gemfile.lock"
+  [version_file, "Gemfile.lock", "CHANGELOG.md"].each do |file|
+    update_file_version(file, current_ver, new_version)
   end
 
-  puts "Version bumped from #{current_version} to #{new_version}"
-
-  # Update CHANGELOG if it exists
-  return unless File.exist?("CHANGELOG.md")
-
-  changelog = File.read("CHANGELOG.md")
-  date = Time.now.strftime("%Y-%m-%d")
-
-  # Add new version entry at the top after the header
-  new_entry = "\n## [#{new_version}] - #{date}\n\n### Added\n\n### Changed\n\n### Fixed\n\n"
-
-  updated_changelog = if changelog.include?("## [Unreleased]")
-                        # Insert after Unreleased section
-                        changelog.sub(/(## \[Unreleased\].*?\n)/, "\\1#{new_entry}")
-                      elsif changelog.include?("# Changelog")
-                        # Insert after main header
-                        changelog.sub(/(# Changelog\s*\n)/, "\\1#{new_entry}")
-                      else
-                        # Prepend to file if no standard structure
-                        "# Changelog#{new_entry}#{changelog}"
-                      end
-
-  File.write("CHANGELOG.md", updated_changelog)
-  puts "Updated CHANGELOG.md with new version entry"
+  puts "Version bumped from #{current_ver} to #{new_version}"
+  puts "Updated Gemfile.lock" if File.exist?("Gemfile.lock")
+  puts "Updated CHANGELOG.md with new version entry" if File.exist?("CHANGELOG.md")
 end
 
-# rubocop:enable Metrics/BlockLength
+task default: %i[spec rubocop docs]

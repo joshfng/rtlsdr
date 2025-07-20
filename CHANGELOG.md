@@ -2,6 +2,17 @@
 
 ## [Unreleased]
 
+## [0.1.10] - 2025-07-19
+
+### Added
+
+### Changed
+
+Update gems
+
+### Fixed
+
+
 ## [0.1.9] - 2025-06-13
 
 ### Added
