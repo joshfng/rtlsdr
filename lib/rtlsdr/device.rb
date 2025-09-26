@@ -388,11 +388,19 @@ module RTLSDR
       check_result(result, "Failed to set bias tee")
     end
 
+    def enable_bias_tee
+      self.bias_tee = true
+    end
+
+    def disable_bias_tee
+      self.bias_tee = false
+    end
+
     # Enable bias tee
     #
     # @return [Boolean] true
     def bias_tee!
-      self.bias_tee = true
+      enable_bias_tee
     end
 
     # Set bias tee GPIO state

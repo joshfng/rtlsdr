@@ -47,7 +47,7 @@ RDoc::Task.new(:rdoc) do |rdoc|
   rdoc.rdoc_dir = "doc"
   rdoc.title = DOC_TITLE
   rdoc.main = "README.md"
-  rdoc.rdoc_files.include(*DOC_FILES.first(1), *DOC_FILES[2..-1])
+  rdoc.rdoc_files.include(*DOC_FILES.first(1), *DOC_FILES[2..])
   rdoc.options << "--line-numbers" << "--all" << "--charset=UTF-8"
   %w[spec examples bin exe].each { |dir| rdoc.options << "--exclude=#{dir}/" }
   rdoc.options << "--template=hanna" if system("gem list hanna -i > /dev/null 2>&1")
@@ -103,7 +103,7 @@ task :release do
   print "Do you want to continue? (yes/no): "
 
   if $stdin.gets.chomp.downcase == "yes"
-    old_version = current_version
+    current_version
     Rake::Task["version:patch"].invoke
 
     version_content = File.read("lib/rtlsdr/version.rb")
@@ -132,8 +132,11 @@ def bump_version(type)
 
   case type
   when :patch then patch += 1
-  when :minor then minor += 1; patch = 0
-  when :major then major += 1; minor = 0; patch = 0
+  when :minor then minor += 1
+                   patch = 0
+  when :major then major += 1
+                   minor = 0
+                   patch = 0
   end
 
   new_version = "#{major}.#{minor}.#{patch}"
