@@ -2,6 +2,17 @@
 
 ## [Unreleased]
 
+## [0.1.12] - 2025-09-26
+
+### Added
+
+Misc updates
+
+### Changed
+
+### Fixed
+
+
 ## [0.1.11] - 2025-07-19
 
 ### Added
