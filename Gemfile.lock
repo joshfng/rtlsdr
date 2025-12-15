@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    rtlsdr (0.1.13)
+    rtlsdr (0.2.0)
       ffi
 
 GEM
@@ -23,7 +23,7 @@ GEM
     ffi (1.17.2-x86_64-darwin)
     ffi (1.17.2-x86_64-linux-gnu)
     ffi (1.17.2-x86_64-linux-musl)
-    io-console (0.8.1)
+    io-console (0.8.2)
     irb (1.15.3)
       pp (>= 0.6.0)
       rdoc (>= 4.0.0)
