@@ -2,9 +2,12 @@
 
 require_relative "rtlsdr/version"
 require_relative "rtlsdr/ffi"
+require_relative "rtlsdr/fftw"
 require_relative "rtlsdr/device"
 require_relative "rtlsdr/errors"
 require_relative "rtlsdr/dsp"
+require_relative "rtlsdr/dsp/filter"
+require_relative "rtlsdr/demod"
 require_relative "rtlsdr/scanner"
 
 # Ruby bindings for RTL-SDR (Software Defined Radio) devices

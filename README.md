@@ -30,6 +30,20 @@ sudo apt-get install librtlsdr-dev
 brew install librtlsdr
 ```
 
+### Optional: FFTW3 for FFT Support
+
+To enable FFT features (fast spectrum analysis, frequency response, etc.), install FFTW3:
+
+```bash
+# Ubuntu/Debian
+sudo apt-get install libfftw3-dev
+
+# macOS
+brew install fftw
+```
+
+FFT features are optional - the gem works without FFTW3, but FFT-related functions will raise an error if called.
+
 ### From Source
 
 If you need to build librtlsdr from source, the gem will automatically try to build it:
@@ -167,6 +181,128 @@ freq_offset = RTLSDR::DSP.estimate_frequency(samples, device.sample_rate)
 # Power spectrum (simple implementation)
 power_spectrum = RTLSDR::DSP.power_spectrum(samples, 1024)
 peak_bin, peak_power = RTLSDR::DSP.find_peak(power_spectrum)
+```
+
+### FFT Analysis (requires FFTW3)
+
+```ruby
+# Check if FFT is available
+if RTLSDR::DSP.fft_available?
+  # Forward FFT
+  spectrum = RTLSDR::DSP.fft(samples)
+
+  # Power spectrum in dB with windowing
+  power_db = RTLSDR::DSP.fft_power_db(samples, window: :hanning)
+
+  # Shift DC to center (like numpy.fft.fftshift)
+  centered = RTLSDR::DSP.fft_shift(spectrum)
+
+  # Inverse FFT
+  reconstructed = RTLSDR::DSP.ifft(spectrum)
+end
+
+# Available window functions: :hanning, :hamming, :blackman, :none
+windowed = RTLSDR::DSP.apply_window(samples, :blackman)
+```
+
+### Digital Filters
+
+```ruby
+# Create lowpass filter (100 kHz cutoff at 2.048 MHz sample rate)
+lpf = RTLSDR::DSP::Filter.lowpass(
+  cutoff: 100_000,
+  sample_rate: 2_048_000,
+  taps: 63,
+  window: :hamming
+)
+
+# Create highpass filter
+hpf = RTLSDR::DSP::Filter.highpass(cutoff: 1000, sample_rate: 48_000)
+
+# Create bandpass filter (voice: 300-3000 Hz)
+bpf = RTLSDR::DSP::Filter.bandpass(low: 300, high: 3000, sample_rate: 48_000)
+
+# Create bandstop (notch) filter
+notch = RTLSDR::DSP::Filter.bandstop(low: 50, high: 60, sample_rate: 48_000)
+
+# Apply filter
+filtered = lpf.apply(samples)
+
+# Zero-phase filtering (no phase distortion)
+filtered = lpf.apply_zero_phase(samples)
+
+# Get filter properties
+puts lpf.group_delay  # Delay in samples
+puts lpf.taps         # Number of filter taps
+
+# Get frequency response (requires FFTW3)
+response = lpf.frequency_response(256)
+```
+
+### Decimation and Resampling
+
+```ruby
+# Decimate by factor of 4 (with anti-aliasing filter)
+decimated = RTLSDR::DSP.decimate(samples, 4)
+
+# Interpolate by factor of 2
+interpolated = RTLSDR::DSP.interpolate(samples, 2)
+
+# Resample from 2.4 MHz to 48 kHz
+audio = RTLSDR::DSP.resample(samples, from_rate: 2_400_000, to_rate: 48_000)
+```
+
+## Demodulation
+
+The gem includes demodulators for common radio signals:
+
+### FM Demodulation
+
+```ruby
+# Wideband FM (broadcast radio 88-108 MHz)
+audio = RTLSDR::Demod.fm(samples, sample_rate: 2_048_000, audio_rate: 48_000)
+
+# With European de-emphasis (50µs instead of US 75µs)
+audio = RTLSDR::Demod.fm(samples, sample_rate: 2_048_000, tau: 50e-6)
+
+# Narrowband FM (voice radio, ham, FRS)
+audio = RTLSDR::Demod.nfm(samples, sample_rate: 2_048_000)
+```
+
+### AM Demodulation
+
+```ruby
+# Envelope detection (simple AM)
+audio = RTLSDR::Demod.am(samples, sample_rate: 2_048_000)
+
+# Synchronous AM (better quality)
+audio = RTLSDR::Demod.am_sync(samples, sample_rate: 2_048_000)
+```
+
+### SSB Demodulation
+
+```ruby
+# Upper Sideband (ham radio above 10 MHz)
+audio = RTLSDR::Demod.usb(samples, sample_rate: 2_048_000, bfo_offset: 1500)
+
+# Lower Sideband (ham radio below 10 MHz)
+audio = RTLSDR::Demod.lsb(samples, sample_rate: 2_048_000, bfo_offset: 1500)
+```
+
+### Helper Functions
+
+```ruby
+# Generate complex oscillator for mixing
+osc = RTLSDR::Demod.complex_oscillator(1024, 1000, 48_000)
+
+# Frequency shift a signal
+shifted = RTLSDR::Demod.mix(samples, -10_000, 2_048_000)
+
+# FM discriminator (phase difference)
+baseband = RTLSDR::Demod.phase_diff(samples)
+
+# De-emphasis filter for FM audio
+filtered = RTLSDR::Demod.deemphasis(audio, 75e-6, 48_000)
 ```
 
 ## Frequency Scanning
@@ -349,6 +485,8 @@ ruby examples/spectrum_analyzer.rb
 
 ### DSP Functions
 
+#### Basic Functions
+
 - `RTLSDR::DSP.iq_to_complex(data)` - Convert IQ bytes to complex samples
 - `RTLSDR::DSP.average_power(samples)` - Calculate average power
 - `RTLSDR::DSP.power_spectrum(samples, window_size)` - Power spectrum
@@ -357,6 +495,59 @@ ruby examples/spectrum_analyzer.rb
 - `RTLSDR::DSP.magnitude(samples)` - Convert to magnitude
 - `RTLSDR::DSP.phase(samples)` - Extract phase information
 - `RTLSDR::DSP.estimate_frequency(samples, sample_rate)` - Frequency estimation
+
+#### FFT Functions (requires FFTW3)
+
+- `RTLSDR::DSP.fft_available?` - Check if FFTW3 is available
+- `RTLSDR::DSP.fft(samples)` - Forward FFT
+- `RTLSDR::DSP.ifft(spectrum)` - Inverse FFT
+- `RTLSDR::DSP.fft_power_db(samples, window:)` - Power spectrum in dB
+- `RTLSDR::DSP.fft_shift(spectrum)` - Shift DC to center
+- `RTLSDR::DSP.ifft_shift(spectrum)` - Reverse fft_shift
+- `RTLSDR::DSP.apply_window(samples, type)` - Apply window function
+
+#### Decimation and Resampling
+
+- `RTLSDR::DSP.decimate(samples, factor)` - Decimate with anti-aliasing
+- `RTLSDR::DSP.interpolate(samples, factor)` - Interpolate samples
+- `RTLSDR::DSP.resample(samples, from_rate:, to_rate:)` - Rational resampling
+
+### Filter Class
+
+- `Filter.lowpass(cutoff:, sample_rate:, taps:, window:)` - Design lowpass filter
+- `Filter.highpass(cutoff:, sample_rate:, taps:, window:)` - Design highpass filter
+- `Filter.bandpass(low:, high:, sample_rate:, taps:, window:)` - Design bandpass filter
+- `Filter.bandstop(low:, high:, sample_rate:, taps:, window:)` - Design bandstop filter
+- `#apply(samples)` - Apply filter to samples
+- `#apply_zero_phase(samples)` - Zero-phase filtering
+- `#frequency_response(points)` - Get filter frequency response
+- `#group_delay` - Get filter group delay
+- `#coefficients` - Get filter coefficients
+- `#taps` - Number of filter taps
+
+### Demod Module
+
+#### FM Demodulation
+
+- `Demod.fm(samples, sample_rate:, audio_rate:, deviation:, tau:)` - Wideband FM
+- `Demod.nfm(samples, sample_rate:, audio_rate:, deviation:)` - Narrowband FM
+
+#### AM Demodulation
+
+- `Demod.am(samples, sample_rate:, audio_rate:, audio_bandwidth:)` - Envelope detection
+- `Demod.am_sync(samples, sample_rate:, audio_rate:, audio_bandwidth:)` - Synchronous AM
+
+#### SSB Demodulation
+
+- `Demod.usb(samples, sample_rate:, audio_rate:, bfo_offset:)` - Upper Sideband
+- `Demod.lsb(samples, sample_rate:, audio_rate:, bfo_offset:)` - Lower Sideband
+
+#### Helper Functions
+
+- `Demod.complex_oscillator(length, frequency, sample_rate)` - Generate carrier
+- `Demod.mix(samples, frequency, sample_rate)` - Frequency shift signal
+- `Demod.phase_diff(samples)` - FM discriminator
+- `Demod.deemphasis(samples, tau, sample_rate)` - De-emphasis filter
 
 ### Scanner Class
 
@@ -384,9 +575,10 @@ This gem is licensed under the MIT license.
 
 ## Requirements
 
-- Ruby 2.7 or later
+- Ruby 3.3 or later
 - librtlsdr (installed system-wide or built locally)
 - FFI gem
+- libfftw3 (optional, for FFT functions)
 
 ## Supported Platforms
 
