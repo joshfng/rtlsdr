@@ -45,20 +45,48 @@ module RTLSDR
       attr_reader :load_error
     end
 
-    # FFTW planning flags
+    # @!group FFTW Planning Flags
+    # These constants control how FFTW plans are created. Higher effort flags
+    # produce faster transforms but take longer to plan.
+
+    # @return [Integer] Measure execution time to find optimal plan
     FFTW_MEASURE = 0
+
+    # @return [Integer] Allow input array to be destroyed during planning
     FFTW_DESTROY_INPUT = 1
+
+    # @return [Integer] Don't assume arrays are aligned in memory
     FFTW_UNALIGNED = 2
+
+    # @return [Integer] Minimize memory usage at cost of speed
     FFTW_CONSERVE_MEMORY = 4
+
+    # @return [Integer] Try all possible algorithms (very slow planning)
     FFTW_EXHAUSTIVE = 8
+
+    # @return [Integer] Preserve input array contents during transform
     FFTW_PRESERVE_INPUT = 16
+
+    # @return [Integer] Like MEASURE but try harder (slower planning)
     FFTW_PATIENT = 32
+
+    # @return [Integer] Use quick heuristic to pick plan (fast planning, default)
     FFTW_ESTIMATE = 64
+
+    # @return [Integer] Only use wisdom (cached plans), fail if none available
     FFTW_WISDOM_ONLY = 2_097_152
 
-    # FFT direction
+    # @!endgroup
+
+    # @!group FFT Direction Constants
+
+    # @return [Integer] Forward FFT direction (time to frequency domain)
     FFTW_FORWARD = -1
+
+    # @return [Integer] Backward/Inverse FFT direction (frequency to time domain)
     FFTW_BACKWARD = 1
+
+    # @!endgroup
 
     if available?
       # Memory allocation
