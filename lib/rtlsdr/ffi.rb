@@ -140,10 +140,11 @@ module RTLSDR
     attach_function :rtlsdr_get_offset_tuning, [:rtlsdr_dev_t], :int
 
     # Streaming functions
+    # Note: blocking: true releases the GVL so other Ruby threads can run
     attach_function :rtlsdr_reset_buffer, [:rtlsdr_dev_t], :int
-    attach_function :rtlsdr_read_sync, %i[rtlsdr_dev_t pointer int pointer], :int
-    attach_function :rtlsdr_wait_async, %i[rtlsdr_dev_t rtlsdr_read_async_cb_t pointer], :int
-    attach_function :rtlsdr_read_async, %i[rtlsdr_dev_t rtlsdr_read_async_cb_t pointer uint32 uint32], :int
+    attach_function :rtlsdr_read_sync, %i[rtlsdr_dev_t pointer int pointer], :int, blocking: true
+    attach_function :rtlsdr_wait_async, %i[rtlsdr_dev_t rtlsdr_read_async_cb_t pointer], :int, blocking: true
+    attach_function :rtlsdr_read_async, %i[rtlsdr_dev_t rtlsdr_read_async_cb_t pointer uint32 uint32], :int, blocking: true
     attach_function :rtlsdr_cancel_async, [:rtlsdr_dev_t], :int
 
     # Bias tee functions
