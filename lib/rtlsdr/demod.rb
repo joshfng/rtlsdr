@@ -364,6 +364,111 @@ module RTLSDR
     end
 
     # =========================================================================
+    # FSK Demodulation
+    # =========================================================================
+
+    # FSK (Frequency Shift Keying) demodulation
+    #
+    # Demodulates FSK signals by using an FM discriminator to extract
+    # instantaneous frequency, then thresholding to recover bits.
+    # FSK encodes data by switching between two frequencies (mark and space).
+    #
+    # @param [Array<Complex>] samples Input IQ samples
+    # @param [Integer] sample_rate Input sample rate in Hz
+    # @param [Numeric] baud_rate Symbol rate in baud (symbols per second)
+    # @param [Boolean] invert Swap mark/space interpretation (default: false)
+    # @return [Array<Integer>] Recovered bits (0 or 1)
+    # @example Demodulate 1200 baud FSK
+    #   bits = RTLSDR::Demod.fsk(samples, sample_rate: 48_000, baud_rate: 1200)
+    # @example Demodulate RTTY at 45.45 baud
+    #   bits = RTLSDR::Demod.fsk(samples, sample_rate: 48_000, baud_rate: 45.45)
+    def self.fsk(samples, sample_rate:, baud_rate:, invert: false)
+      return [] if samples.empty? || samples.length < 2
+
+      # Step 1: FM discriminator to get instantaneous frequency
+      freq = phase_diff(samples)
+      return [] if freq.empty?
+
+      # Step 2: Lowpass filter to smooth transitions (cutoff at 1.5x baud rate)
+      filter_cutoff = [baud_rate * 1.5, (sample_rate / 2.0) - 1].min
+      filter = DSP::Filter.lowpass(
+        cutoff: filter_cutoff,
+        sample_rate: sample_rate,
+        taps: 63
+      )
+      complex_freq = freq.map { |f| Complex(f, 0) }
+      smoothed = filter.apply(complex_freq).map(&:real)
+
+      # Step 3: Decimate to ~4x baud rate for bit decisions
+      target_rate = (baud_rate * 4).to_i
+      target_rate = [target_rate, sample_rate].min
+
+      if sample_rate > target_rate && target_rate.positive?
+        decimated = DSP.resample(
+          smoothed.map { |s| Complex(s, 0) },
+          from_rate: sample_rate,
+          to_rate: target_rate
+        ).map(&:real)
+        effective_rate = target_rate
+      else
+        decimated = smoothed
+        effective_rate = sample_rate
+      end
+
+      return [] if decimated.empty?
+
+      # Step 4: Threshold at midpoint to get raw bits
+      threshold = decimated.sum / decimated.length.to_f
+      raw_bits = decimated.map { |s| s > threshold ? 1 : 0 }
+      raw_bits = raw_bits.map { |b| 1 - b } if invert
+
+      # Step 5: Sample at symbol centers
+      samples_per_symbol = effective_rate.to_f / baud_rate
+      return raw_bits if samples_per_symbol < 1
+
+      output_bits = []
+      offset = (samples_per_symbol / 2.0).to_i
+      index = offset
+
+      while index < raw_bits.length
+        output_bits << raw_bits[index]
+        index += samples_per_symbol.round
+      end
+
+      output_bits
+    end
+
+    # FSK demodulation returning raw discriminator output
+    #
+    # Returns the smoothed frequency discriminator output without bit slicing.
+    # Useful for visualizing FSK signals, debugging, or implementing custom
+    # clock recovery algorithms.
+    #
+    # @param [Array<Complex>] samples Input IQ samples
+    # @param [Integer] sample_rate Input sample rate in Hz
+    # @param [Numeric] baud_rate Symbol rate in baud (used for filter cutoff)
+    # @return [Array<Float>] Smoothed discriminator output
+    # @example Get raw FSK waveform for plotting
+    #   waveform = RTLSDR::Demod.fsk_raw(samples, sample_rate: 48_000, baud_rate: 1200)
+    def self.fsk_raw(samples, sample_rate:, baud_rate:)
+      return [] if samples.empty? || samples.length < 2
+
+      # FM discriminator
+      freq = phase_diff(samples)
+      return [] if freq.empty?
+
+      # Lowpass filter
+      filter_cutoff = [baud_rate * 1.5, (sample_rate / 2.0) - 1].min
+      filter = DSP::Filter.lowpass(
+        cutoff: filter_cutoff,
+        sample_rate: sample_rate,
+        taps: 63
+      )
+      complex_freq = freq.map { |f| Complex(f, 0) }
+      filter.apply(complex_freq).map(&:real)
+    end
+
+    # =========================================================================
     # Private Helpers
     # =========================================================================
 

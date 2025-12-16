@@ -34,6 +34,20 @@ RSpec.describe RTLSDR::Demod do
     end
   end
 
+  # Helper to generate FSK modulated signal
+  def generate_fsk_signal(bits, mark_freq, space_freq, sample_rate, samples_per_bit)
+    result = []
+    bits.each do |bit|
+      freq = bit == 1 ? mark_freq : space_freq
+      omega = 2.0 * Math::PI * freq / sample_rate
+      samples_per_bit.times do |i|
+        phase = omega * (result.length + i)
+        result << Complex(Math.cos(phase), Math.sin(phase))
+      end
+    end
+    result
+  end
+
   describe ".complex_oscillator" do
     it "generates correct length" do
       osc = described_class.complex_oscillator(100, 1000, sample_rate)
@@ -320,6 +334,99 @@ RSpec.describe RTLSDR::Demod do
       # Output should be roughly high_rate/audio_rate times smaller
       expected_length = (fm_samples.length * audio_rate / high_rate.to_f).to_i
       expect(audio.length).to be_within(expected_length * 0.1).of(expected_length)
+    end
+  end
+
+  describe ".fsk" do
+    let(:baud_rate) { 1200 }
+    let(:samples_per_bit) { (sample_rate / baud_rate).to_i }
+    let(:mark_freq) { 2200 }
+    let(:space_freq) { 1200 }
+    let(:test_bits) { [1, 0, 1, 1, 0, 0, 1, 0] }
+    let(:fsk_samples) { generate_fsk_signal(test_bits, mark_freq, space_freq, sample_rate, samples_per_bit) }
+
+    it "returns bit array" do
+      bits = described_class.fsk(fsk_samples, sample_rate: sample_rate, baud_rate: baud_rate)
+      expect(bits).to all(be_a(Integer))
+      expect(bits).to all(be_between(0, 1))
+    end
+
+    it "recovers correct number of bits" do
+      bits = described_class.fsk(fsk_samples, sample_rate: sample_rate, baud_rate: baud_rate)
+      # Allow some variance due to edge effects
+      expect(bits.length).to be_within(2).of(test_bits.length)
+    end
+
+    it "recovers bit pattern from clean FSK signal" do
+      # Use more samples per bit for cleaner signal
+      high_samples_per_bit = 100
+      high_sample_rate = baud_rate * high_samples_per_bit
+      signal = generate_fsk_signal(test_bits, mark_freq, space_freq, high_sample_rate, high_samples_per_bit)
+
+      recovered = described_class.fsk(signal, sample_rate: high_sample_rate, baud_rate: baud_rate)
+
+      # Check that most bits match (allow for edge effects)
+      matching = recovered.take(test_bits.length).zip(test_bits).count { |r, t| r == t }
+      expect(matching).to be >= (test_bits.length * 0.75)
+    end
+
+    it "handles invert option" do
+      bits_normal = described_class.fsk(fsk_samples, sample_rate: sample_rate, baud_rate: baud_rate, invert: false)
+      bits_inverted = described_class.fsk(fsk_samples, sample_rate: sample_rate, baud_rate: baud_rate, invert: true)
+
+      # Inverted bits should be opposite
+      bits_normal.zip(bits_inverted).each do |normal, inverted|
+        expect(inverted).to eq(1 - normal)
+      end
+    end
+
+    it "handles empty input" do
+      expect(described_class.fsk([], sample_rate: sample_rate, baud_rate: baud_rate)).to eq([])
+    end
+
+    it "handles single sample" do
+      expect(described_class.fsk([Complex(1, 0)], sample_rate: sample_rate, baud_rate: baud_rate)).to eq([])
+    end
+
+    it "works with different baud rates" do
+      [300, 1200, 9600].each do |rate|
+        spb = (sample_rate / rate).to_i
+        next if spb < 4 # Skip if too few samples per bit
+
+        signal = generate_fsk_signal([1, 0, 1, 0], mark_freq, space_freq, sample_rate, spb)
+        bits = described_class.fsk(signal, sample_rate: sample_rate, baud_rate: rate)
+        expect(bits).not_to be_empty
+      end
+    end
+  end
+
+  describe ".fsk_raw" do
+    let(:baud_rate) { 1200 }
+    let(:samples_per_bit) { (sample_rate / baud_rate).to_i }
+    let(:fsk_samples) { generate_fsk_signal([1, 0, 1, 0], 2200, 1200, sample_rate, samples_per_bit) }
+
+    it "returns float array" do
+      raw = described_class.fsk_raw(fsk_samples, sample_rate: sample_rate, baud_rate: baud_rate)
+      expect(raw).to all(be_a(Float))
+    end
+
+    it "returns approximately same length as input" do
+      raw = described_class.fsk_raw(fsk_samples, sample_rate: sample_rate, baud_rate: baud_rate)
+      # One less due to phase_diff, then same length from filter
+      expect(raw.length).to eq(fsk_samples.length - 1)
+    end
+
+    it "shows frequency transitions" do
+      raw = described_class.fsk_raw(fsk_samples, sample_rate: sample_rate, baud_rate: baud_rate)
+
+      # Signal should show variation (different frequency levels)
+      min_val = raw.min
+      max_val = raw.max
+      expect(max_val - min_val).to be > 0.01
+    end
+
+    it "handles empty input" do
+      expect(described_class.fsk_raw([], sample_rate: sample_rate, baud_rate: baud_rate)).to eq([])
     end
   end
 end

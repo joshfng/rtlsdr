@@ -289,6 +289,22 @@ audio = RTLSDR::Demod.usb(samples, sample_rate: 2_048_000, bfo_offset: 1500)
 audio = RTLSDR::Demod.lsb(samples, sample_rate: 2_048_000, bfo_offset: 1500)
 ```
 
+### FSK Demodulation
+
+```ruby
+# Demodulate FSK signal at 1200 baud
+bits = RTLSDR::Demod.fsk(samples, sample_rate: 48_000, baud_rate: 1200)
+
+# RTTY at 45.45 baud
+bits = RTLSDR::Demod.fsk(samples, sample_rate: 48_000, baud_rate: 45.45)
+
+# Invert mark/space if needed
+bits = RTLSDR::Demod.fsk(samples, sample_rate: 48_000, baud_rate: 1200, invert: true)
+
+# Get raw discriminator output for debugging/visualization
+waveform = RTLSDR::Demod.fsk_raw(samples, sample_rate: 48_000, baud_rate: 1200)
+```
+
 ### Helper Functions
 
 ```ruby
@@ -541,6 +557,11 @@ ruby examples/spectrum_analyzer.rb
 
 - `Demod.usb(samples, sample_rate:, audio_rate:, bfo_offset:)` - Upper Sideband
 - `Demod.lsb(samples, sample_rate:, audio_rate:, bfo_offset:)` - Lower Sideband
+
+#### FSK Demodulation
+
+- `Demod.fsk(samples, sample_rate:, baud_rate:, invert:)` - FSK to bits
+- `Demod.fsk_raw(samples, sample_rate:, baud_rate:)` - Raw discriminator output
 
 #### Helper Functions
 
