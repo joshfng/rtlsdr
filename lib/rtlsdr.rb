@@ -4,6 +4,7 @@ require_relative "rtlsdr/version"
 require_relative "rtlsdr/ffi"
 require_relative "rtlsdr/fftw"
 require_relative "rtlsdr/device"
+require_relative "rtlsdr/tcp_client"
 require_relative "rtlsdr/errors"
 require_relative "rtlsdr/dsp"
 require_relative "rtlsdr/dsp/filter"
@@ -25,11 +26,18 @@ require_relative "rtlsdr/scanner"
 # * Frequency scanning and spectrum analysis
 # * EEPROM reading/writing and bias tee control
 #
-# @example Basic usage
+# @example Basic usage with local device
 #   device = RTLSDR.open(0)
 #   device.sample_rate = 2_048_000
 #   device.center_freq = 100_000_000
 #   device.gain = 496
+#   samples = device.read_samples(1024)
+#   device.close
+#
+# @example Connect to remote rtl_tcp server
+#   device = RTLSDR.connect("192.168.1.100", 1234)
+#   device.sample_rate = 2_048_000
+#   device.center_freq = 100_000_000
 #   samples = device.read_samples(1024)
 #   device.close
 #
@@ -117,6 +125,27 @@ module RTLSDR
     #   device.center_freq = 100_000_000
     def open(index = 0)
       Device.new(index)
+    end
+
+    # Connect to a remote rtl_tcp server
+    #
+    # Creates and returns a TcpClient instance connected to the specified
+    # rtl_tcp server. The client implements the same interface as Device,
+    # allowing seamless switching between local and remote devices.
+    #
+    # @param [String] host Hostname or IP address of rtl_tcp server
+    # @param [Integer] port Port number (default: 1234)
+    # @param [Integer] timeout Connection timeout in seconds (default: 10)
+    # @return [RTLSDR::TcpClient] TcpClient instance
+    # @raise [ConnectionError] if connection fails
+    # @example Connect to remote device
+    #   device = RTLSDR.connect("192.168.1.100")
+    #   device.center_freq = 100_000_000
+    # @example Connect with custom port
+    #   device = RTLSDR.connect("192.168.1.100", 5555)
+    # @since 0.3.0
+    def connect(host, port = TcpClient::DEFAULT_PORT, timeout: 10)
+      TcpClient.new(host, port, timeout: timeout)
     end
 
     # List all available devices with their information

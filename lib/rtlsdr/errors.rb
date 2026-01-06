@@ -69,4 +69,12 @@ module RTLSDR
   #
   # @since 0.1.0
   class CallbackError < Error; end
+
+  # Raised when network connection fails
+  #
+  # This exception is thrown when connecting to an rtl_tcp server fails,
+  # or when the connection is lost during operation.
+  #
+  # @since 0.3.0
+  class ConnectionError < Error; end
 end

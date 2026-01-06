@@ -2,6 +2,19 @@
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-01-06
+
+### Added
+
+- `RTLSDR::TcpClient` - Connect to remote RTL-SDR devices via rtl_tcp
+- `RTLSDR.connect(host, port)` - Factory method for TCP connections
+- `RTLSDR::ConnectionError` - Exception for network connection failures
+- Full API compatibility between `Device` and `TcpClient`
+
+### Changed
+
+- Version bump to 0.3.0 (new feature)
+
 ## [0.1.13] - 2025-09-26
 
 ### Added
