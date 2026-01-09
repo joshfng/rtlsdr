@@ -1,5 +1,11 @@
 # frozen_string_literal: true
 
+require "simplecov"
+SimpleCov.start do
+  add_filter "/spec/"
+  add_filter "/examples/"
+end
+
 require_relative "../lib/rtlsdr"
 
 RSpec.configure do |config|
