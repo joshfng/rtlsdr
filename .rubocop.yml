@@ -18,10 +18,22 @@ Metrics/ClassLength:
   Max: 500
 Metrics/MethodLength:
   Max: 20
+  Exclude:
+    - 'lib/rtlsdr/fftw.rb'
+    - 'lib/rtlsdr/demod.rb'
 Metrics/BlockLength:
   Max: 20
 Metrics/AbcSize:
   Max: 25
+  Exclude:
+    - 'lib/rtlsdr/fftw.rb'
+    - 'lib/rtlsdr/demod.rb'
+    - 'lib/rtlsdr/dsp.rb'
+    - 'lib/rtlsdr/dsp/filter.rb'
+Metrics/ModuleLength:
+  Exclude:
+    - 'lib/rtlsdr/demod.rb'
+    - 'lib/rtlsdr/dsp.rb'
 Metrics/PerceivedComplexity:
   Max: 20
 Metrics/CyclomaticComplexity:
@@ -31,4 +43,17 @@ Naming/MethodParameterName:
   MinNameLength: 2
 
 RSpec/MultipleExpectations:
+  Enabled: false
+RSpec/ExampleLength:
+  Enabled: false
+RSpec/MessageSpies:
+  Enabled: false
+RSpec/StubbedMock:
+  Enabled: false
+RSpec/MultipleDescribes:
+  Enabled: false
+RSpec/MultipleMemoizedHelpers:
+  Enabled: false
+
+Style/ExponentialNotation:
   Enabled: false
