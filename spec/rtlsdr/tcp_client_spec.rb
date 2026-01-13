@@ -8,7 +8,7 @@ RSpec.describe RTLSDR::TcpClient do
   let(:port) { 1234 }
 
   # rtl_tcp header: "RTL0" + tuner_type(4) + gain_count(4)
-  let(:valid_header) { "RTL0" + [5].pack("N") + [29].pack("N") }
+  let(:valid_header) { "RTL0#{[5].pack("N")}#{[29].pack("N")}" }
 
   before do
     allow(Socket).to receive(:tcp).and_return(mock_socket)
@@ -32,7 +32,7 @@ RSpec.describe RTLSDR::TcpClient do
     end
 
     it "raises ConnectionError on invalid header" do
-      allow(mock_socket).to receive(:read).with(12).and_return("BADH" + "\x00" * 8)
+      allow(mock_socket).to receive(:read).with(12).and_return("BADH#{"\x00" * 8}")
       expect { described_class.new(host, port) }.to raise_error(RTLSDR::ConnectionError, /Invalid rtl_tcp header/)
     end
 
@@ -292,7 +292,7 @@ end
 RSpec.describe RTLSDR do
   describe ".connect" do
     let(:mock_socket) { instance_double(Socket) }
-    let(:valid_header) { "RTL0" + [5].pack("N") + [29].pack("N") }
+    let(:valid_header) { "RTL0#{[5].pack("N")}#{[29].pack("N")}" }
 
     before do
       allow(Socket).to receive(:tcp).and_return(mock_socket)

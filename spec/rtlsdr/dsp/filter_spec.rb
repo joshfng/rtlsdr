@@ -97,8 +97,8 @@ RSpec.describe RTLSDR::DSP::Filter do
       filtered_high = filter.apply(high_freq)
 
       # Low frequency should have higher power after filtering
-      power_low = filtered_low.map { |s| s.abs2 }.sum / filtered_low.length
-      power_high = filtered_high.map { |s| s.abs2 }.sum / filtered_high.length
+      power_low = filtered_low.map(&:abs2).sum / filtered_low.length
+      power_high = filtered_high.map(&:abs2).sum / filtered_high.length
 
       expect(power_low).to be > power_high
     end

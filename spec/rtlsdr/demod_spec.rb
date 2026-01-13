@@ -133,9 +133,7 @@ RSpec.describe RTLSDR::Demod do
 
       # For a pure tone, phase diff should be constant
       expected_diff = 2.0 * Math::PI * 1000 / sample_rate
-      diff.each do |d|
-        expect(d).to be_within(0.001).of(expected_diff)
-      end
+      expect(diff).to all(be_within(0.001).of(expected_diff))
     end
 
     it "handles empty input" do
@@ -216,7 +214,8 @@ RSpec.describe RTLSDR::Demod do
       length = 10_000
 
       fm_signal = generate_fm_signal(audio_freq, deviation, sample_rate, length)
-      audio = described_class.fm(fm_signal, sample_rate: sample_rate, audio_rate: audio_rate, deviation: deviation, tau: nil)
+      audio = described_class.fm(fm_signal, sample_rate: sample_rate, audio_rate: audio_rate, deviation: deviation,
+                                            tau: nil)
 
       # The demodulated audio should have content (not be all zeros)
       power = audio.map { |s| s**2 }.sum / audio.length

@@ -71,7 +71,7 @@ RSpec.describe RTLSDR::DSP do
   end
 
   # FFT-dependent tests
-  context "when FFTW3 is available", if: RTLSDR::DSP.fft_available? do
+  context "when FFTW3 is available", if: described_class.fft_available? do
     describe ".fft" do
       it "computes forward FFT" do
         samples = Array.new(8) { Complex(1, 0) }
@@ -108,7 +108,7 @@ RSpec.describe RTLSDR::DSP do
     end
   end
 
-  context "when FFTW3 is not available", unless: RTLSDR::DSP.fft_available? do
+  context "when FFTW3 is not available", unless: described_class.fft_available? do
     describe ".fft" do
       it "raises error" do
         expect { described_class.fft([Complex(1, 0)]) }.to raise_error(RuntimeError, /FFTW3/)

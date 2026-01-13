@@ -13,14 +13,164 @@ RSpec.describe RTLSDR do
       expect(described_class.device_count).to be >= 0
     end
 
-    it "can list devices" do
-      expect { described_class.devices }.not_to raise_error
-      expect(described_class.devices).to be_an(Array)
+    describe ".device_name" do
+      it "returns device name" do
+        allow(RTLSDR::FFI).to receive(:rtlsdr_get_device_name).and_return("Generic RTL2832U OEM")
+        expect(described_class.device_name(0)).to eq("Generic RTL2832U OEM")
+      end
+
+      it "passes correct index to FFI" do
+        allow(RTLSDR::FFI).to receive(:rtlsdr_get_device_name).and_return("Device")
+        expect(RTLSDR::FFI).to receive(:rtlsdr_get_device_name).with(2)
+        described_class.device_name(2)
+      end
     end
 
-    it "returns empty array when no devices" do
-      allow(RTLSDR::FFI).to receive(:rtlsdr_get_device_count).and_return(0)
-      expect(described_class.devices).to eq([])
+    describe ".device_usb_strings" do
+      context "when successful" do
+        before do
+          allow(RTLSDR::FFI).to receive(:rtlsdr_get_device_usb_strings) do |_index, manufact, product, serial|
+            manufact.replace("Realtek          " + " " * 240)
+            product.replace("RTL2838UHIDIR    " + " " * 240)
+            serial.replace("00000001         " + " " * 240)
+            0
+          end
+        end
+
+        it "returns hash with USB strings" do
+          result = described_class.device_usb_strings(0)
+          expect(result).to be_a(Hash)
+          expect(result).to include(:manufacturer, :product, :serial)
+        end
+
+        it "strips trailing spaces" do
+          result = described_class.device_usb_strings(0)
+          expect(result[:manufacturer]).to eq("Realtek")
+          expect(result[:product]).to eq("RTL2838UHIDIR")
+          expect(result[:serial]).to eq("00000001")
+        end
+      end
+
+      context "when FFI call fails" do
+        before do
+          allow(RTLSDR::FFI).to receive(:rtlsdr_get_device_usb_strings).and_return(-1)
+        end
+
+        it "returns nil" do
+          expect(described_class.device_usb_strings(0)).to be_nil
+        end
+      end
+    end
+
+    describe ".find_device_by_serial" do
+      context "when device is found" do
+        before do
+          allow(RTLSDR::FFI).to receive(:rtlsdr_get_index_by_serial).and_return(2)
+        end
+
+        it "returns device index" do
+          result = described_class.find_device_by_serial("00000001")
+          expect(result).to eq(2)
+        end
+
+        it "passes serial number to FFI" do
+          expect(RTLSDR::FFI).to receive(:rtlsdr_get_index_by_serial).with("00000001")
+          described_class.find_device_by_serial("00000001")
+        end
+      end
+
+      context "when device is not found" do
+        before do
+          allow(RTLSDR::FFI).to receive(:rtlsdr_get_index_by_serial).and_return(-1)
+        end
+
+        it "returns nil" do
+          expect(described_class.find_device_by_serial("99999999")).to be_nil
+        end
+      end
+
+      context "when error occurs" do
+        before do
+          allow(RTLSDR::FFI).to receive(:rtlsdr_get_index_by_serial).and_return(-2)
+        end
+
+        it "returns nil" do
+          expect(described_class.find_device_by_serial("invalid")).to be_nil
+        end
+      end
+    end
+
+    describe ".devices" do
+      it "can list devices" do
+        expect { described_class.devices }.not_to raise_error
+        expect(described_class.devices).to be_an(Array)
+      end
+
+      it "returns empty array when no devices" do
+        allow(RTLSDR::FFI).to receive(:rtlsdr_get_device_count).and_return(0)
+        expect(described_class.devices).to eq([])
+      end
+
+      context "with multiple devices" do
+        before do
+          allow(RTLSDR::FFI).to receive(:rtlsdr_get_device_count).and_return(3)
+          allow(RTLSDR::FFI).to receive(:rtlsdr_get_device_name) do |index|
+            "Device #{index}"
+          end
+          allow(RTLSDR::FFI).to receive(:rtlsdr_get_device_usb_strings) do |index, manufact, product, serial|
+            manufact.replace("Manufacturer #{index}" + " " * 240)
+            product.replace("Product #{index}     " + " " * 240)
+            serial.replace("Serial #{index}      " + " " * 240)
+            0
+          end
+        end
+
+        it "returns array with correct number of devices" do
+          devices = described_class.devices
+          expect(devices.length).to eq(3)
+        end
+
+        it "includes index, name, and usb_strings for each device" do
+          devices = described_class.devices
+          devices.each do |device|
+            expect(device).to include(:index, :name, :usb_strings)
+          end
+        end
+
+        it "maps indices correctly" do
+          devices = described_class.devices
+          expect(devices[0][:index]).to eq(0)
+          expect(devices[1][:index]).to eq(1)
+          expect(devices[2][:index]).to eq(2)
+        end
+
+        it "maps names correctly" do
+          devices = described_class.devices
+          expect(devices[0][:name]).to eq("Device 0")
+          expect(devices[1][:name]).to eq("Device 1")
+          expect(devices[2][:name]).to eq("Device 2")
+        end
+
+        it "maps USB strings correctly" do
+          devices = described_class.devices
+          expect(devices[0][:usb_strings][:manufacturer]).to eq("Manufacturer 0")
+          expect(devices[1][:usb_strings][:product]).to eq("Product 1")
+          expect(devices[2][:usb_strings][:serial]).to eq("Serial 2")
+        end
+      end
+
+      context "when USB strings fail for a device" do
+        before do
+          allow(RTLSDR::FFI).to receive(:rtlsdr_get_device_count).and_return(1)
+          allow(RTLSDR::FFI).to receive(:rtlsdr_get_device_name).and_return("Device 0")
+          allow(RTLSDR::FFI).to receive(:rtlsdr_get_device_usb_strings).and_return(-1)
+        end
+
+        it "includes nil for usb_strings" do
+          devices = described_class.devices
+          expect(devices[0][:usb_strings]).to be_nil
+        end
+      end
     end
   end
 

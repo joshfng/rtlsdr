@@ -10,7 +10,7 @@ RSpec.describe RTLSDR::FFTW do
   end
 
   # Only run these tests if FFTW3 is available
-  context "when FFTW3 is available", if: RTLSDR::FFTW.available? do
+  context "when FFTW3 is available", if: described_class.available? do
     describe ".forward" do
       it "returns empty array for empty input" do
         expect(described_class.forward([])).to eq([])
@@ -75,7 +75,7 @@ RSpec.describe RTLSDR::FFTW do
     end
   end
 
-  context "when FFTW3 is not available", unless: RTLSDR::FFTW.available? do
+  context "when FFTW3 is not available", unless: described_class.available? do
     it "has a load error message" do
       expect(described_class.load_error).to be_a(String)
     end
