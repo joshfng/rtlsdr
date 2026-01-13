@@ -2,6 +2,17 @@
 
 ## [Unreleased]
 
+## [0.3.1] - 2026-01-13
+
+### Added
+
+- New features
+
+### Changed
+
+### Fixed
+
+
 ## [0.3.0] - 2026-01-06
 
 ### Added
