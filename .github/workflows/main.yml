@@ -14,7 +14,7 @@ jobs:
     strategy:
       matrix:
         ruby:
-          - '3.4.5'
+          - '3.4.12'
 
     steps:
       - uses: actions/checkout@v7
@@ -42,7 +42,7 @@ jobs:
       - name: Set up Ruby
         uses: ruby/setup-ruby@v1
         with:
-          ruby-version: '3.4.5'
+          ruby-version: '3.4.12'
           bundler-cache: true
 
       - name: Install system librtlsdr
